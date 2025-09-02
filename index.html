@@ -1,0 +1,474 @@
+ <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terminal Portfolio</title>
+    <!-- Solarized Dark palette -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --base03: #002b36;
+            --base02: #073642;
+            --base01: #586e75;
+            --base00: #657b83;
+            --base0: #839496;
+            --base1: #93a1a1;
+            --yellow: #b58900;
+            --orange: #cb4b16;
+            --red: #dc322f;
+            --magenta: #d33682;
+            --violet: #6c71c4;
+            --blue: #268bd2;
+            --cyan: #2aa198;
+            --green: #859900;
+        }
+        body { background-color: var(--base03); color: var(--base0); font-family: 'Menlo', 'Monaco', 'Courier New', monospace; }
+        .prompt > span:first-child { color: var(--green); }
+        /* color the path (3rd span) instead of last span */
+        .prompt > span:nth-child(3) { color: var(--blue); }
+        .dir { color: var(--blue); font-weight: bold; }
+        .file { color: var(--base0); }
+        .error { color: var(--red); }
+        .output-text { white-space: pre-wrap; }
+        .caret { display: inline-block; background-color: var(--base1); width: 8px; height: 1.2em; animation: blink 1s step-end infinite; }
+        @keyframes blink { from, to { background-color: transparent; } 50% { background-color: var(--base1); } }
+        input:focus { outline: none; }
+        .prompt-row { display:flex; align-items:center; }
+        .prompt-input-wrap { position: relative; flex: 1; }
+        .mirror {
+        position: absolute;
+        left: 0; top: 0;
+        visibility: hidden;
+        white-space: pre;            /* 空白も幅計測に含む */
+        font-family: inherit;
+        font-size: inherit;
+        line-height: 1.2em;
+        }
+
+        .fake-caret {
+        position: absolute;
+        top: 0;
+        height: 1.2em;
+        width: 8px;
+        background-color: var(--base1);
+        animation: blink 1s step-end infinite;
+        }
+
+        /* ネイティブのキャレットは非表示にしておく */
+        input.custom-caret {
+        caret-color: transparent;
+        }
+    </style>
+
+    <!--
+      Fix strategy:
+      - Define `window.terminalData()` *before* Alpine initializes so `x-data="terminalData()"` can be evaluated reliably.
+      - Keep Alpine loaded with `defer` so it initializes after parsing.
+      - Avoid registering via `alpine:init` here because timing caused `terminal` to be undefined in some environments.
+    -->
+    <script>
+    // Global factory so x-data can call terminalData() even before Alpine fires its init.
+    window.terminalData = function() {
+        return {
+            history: [],
+            command: '',
+            commandHistory: [],
+            historyIndex: -1,
+            currentPath: '~',
+            nextId: 0,
+            filesystem: {
+                '~': {
+                    type: 'dir',
+                    children: {
+                        'README.md': {
+                            type: 'file',
+                            content: `
+ようこそ、山路逸斗のポートフォリオへ！
+
+これはvimとターミナルが大好きな私のポートフォリオサイトです。
+Linuxの基本的なコマンドを使って、私の情報を探索できます。
+
+利用可能なコマンド:
+  <span class="dir">help</span>       - 利用可能なコマンドの一覧を表示します
+  <span class="dir">ls [path]</span>  - 現在または指定パスの一覧を表示します
+  <span class="dir">cd [dir]</span>   - ディレクトリを移動します (例: cd projects)
+  <span class="dir">cat [file]</span> - ファイルの内容を表示します (例: cat about.txt)
+  <span class="dir">banner</span>     - バナーを再表示します
+  <span class="dir">clear</span>      - ターミナルの表示をクリアします
+
+まずは <span class="dir">ls</span> と入力して、何があるか見てみてください。
+`
+                        },
+                        'about.txt': {
+                            type: 'file',
+                            content: `
+はじめまして。
+私はIT歴6ヶ月、Vim歴5ヶ月。ITの技術、文化に魅了され日々学習に励んでいます。
+特にバックエンド開発とデータベース設計が好きで情熱を注いでいます。
+このポートフォリオは、私が持つ技術への探求心と遊び心を表現したものです。
+
+- 名前: Hayato Yamaji
+- 職業: ---
+- 拠点: Wakayama, Japan
+- 趣味: Vim, COFFEE
+`
+                        },
+                        'study_log.txt': {
+                            type: 'file',
+                            content:`
+- <span style="color:var(--yellow)">School</span>: RareHECH
+
+- <span style="color:var(--cyan)">Network</span>: OSI参照モデルから勉強を始め、なぜインターネットが繋がるのかというところから学習を始めました
+
+- <span style="color:var(--cyan)">Linux</span>: スクールの学習サービス「Envader」でLinuxコマンドを体系的に学び、日常的にWSLでターミナル操作を行うことで実践的なスキルを身につけています。
+
+- <span style="color:var(--cyan)">Frontend</span>: フロントエンドはスクールの講義や書籍で基礎を学び、ハッカソンでの実装を通して実践的なスキルを身につけました。
+
+- <span style="color:var(--cyan)">Backend</span>: ハッカソンではPythonとFlaskを用い、API設計からデータベース連携まで含むバックエンド開発を担当しました。
+
+- <span style="color:var(--cyan)">Database</span>: ハッカソンに参加した際にはデータベース設計を担当し、ER図の作成や概念設計・論理設計を通じて、設計手法への理解を深めることができました。
+
+- <span style="color:var(--cyan)">Infrastructure</span>: オンプレ環境でのサーバー構築、AWSでS3とLambdaを使ったデプロイや、EC2にSSH接続してToDoアプリを開発するなど、クラウド活用とサーバ運用の基礎を学びました。
+
+- <span style="color:var(--cyan)">Others</span>: ハッカソンでのチーム開発でGit操作に苦労した経験をきっかけに、書籍を活用して学習を進め、チーム開発に必要なバージョン管理スキルを習得しました。
+                                `
+                        },
+                        'skills.txt': {
+                            type: 'file',
+                            content: `
+私が使用したことがある技術です。
+MAX_Level = 100
+
+- <span style="color:var(--cyan)">Frontend</span>: HTML(Lv.30), CSS(Lv.20), JavaScript(Lv.15), Alpine.js(Lv.15), Tailwind CSS(Lv.15)
+- <span style="color:var(--yellow)">Backend</span>: Python(Lv.35), Flask(Lv.35)
+- <span style="color:var(--orange)">Infrastructure</span>: AWS(Lv.15) (S3, CloudFront, Route53, EC2, Lambda), Docker(Lv.10)
+- <span style="color:var(--green)">Database</span>: MySQL(Lv.35)
+- <span style="color:var(--magenta)">CI/CD</span>: ---
+- <span style="color:var(--violet)">Tools</span>: Vim(Lv.35), Git(Lv.40), Notion(Lv.35), Mermeid(Lv.30)
+`
+                        },
+                        'projects': {
+                            type: 'dir',
+                            children: {
+                              'Hackathon.txt': {
+                                  type: 'file',
+                                  content: `
+<a href="https://github.com/RareTECH-Hackathon-TeamM/Nope_Chat_App" target="_blank" rel="noopener noreferrer"><span style="color:var(--green)">Nope</span>: "繋がりすぎる時代" にちょっと距離感のあるチャットアプリ</a>
+
+`
+                                },
+                                'project-B.txt': { type: 'file', content: 'プロジェクトB: AWS上でのデータ分析基盤の構築。TerraformによるIaCを導入。' },
+                            }
+                        },
+                        'contact.txt': {
+                            type: 'file',
+                            content: `
+ご連絡はこちらまでお願いします。
+
+- <span style="color:var(--blue)">GitHub</span>  : <a href="https://github.com/Yamachan-54" target="_brank" rel="noopener noreferrer">https://github.com/yamachan-54</a>
+- <span style="color:var(--violet)">X (Twitter)</span>: <a href="https://x.com/yamachan_96" target="_brank" rel="noopener noreferrer">https://x.com/yamachan_96</a>
+
+`
+                        }
+                    }
+                }
+            },
+
+            init() {
+                this.showBanner();
+                // focus input after Alpine mounts the component
+                this.$nextTick(() => { try { this.$refs.input.focus(); } catch (e) { /* noop */ } });
+            },
+
+            showBanner() {
+                this.history.push({
+                    id: this.nextId++,
+                    path: this.currentPath,
+                    command: '',
+                    output: `
+<pre style="color: var(--cyan);">
+ ██╗  ██╗  █████╗  ██╗   ██╗  █████╗  ████████╗  ██████╗
+ ██║  ██║ ██╔══██╗ ╚██╗ ██╔╝ ██╔══██╗ ╚══██╔══╝ ██╔═══██╗
+ ███████║ ███████║  ╚████╔╝  ███████║    ██║    ██║   ██║
+ ██╔══██║ ██╔══██║   ╚██╔╝   ██╔══██║    ██║    ██║   ██║
+ ██║  ██║ ██║  ██║    ██║    ██║  ██║    ██║    ╚██████╔╝
+ ╚═╝  ╚═╝ ╚═╝  ╚═╝    ╚═╝    ╚═╝  ╚═╝    ╚═╝     ╚═════╝
+
+ ██╗   ██╗  █████╗  ███╗   ███╗  █████╗       ██╗ ██╗
+ ╚██╗ ██╔╝ ██╔══██╗ ████╗ ████║ ██╔══██╗      ██║ ██║
+  ╚████╔╝  ███████║ ██╔████╔██║ ███████║      ██║ ██║
+   ╚██╔╝   ██╔══██║ ██║╚██╔╝██║ ██╔══██║ ██   ██║ ██║
+    ██║    ██║  ██║ ██║ ╚═╝ ██║ ██║  ██║ ╚█████╔╝ ██║
+    ╚═╝    ╚═╝  ╚═╝ ╚═╝     ╚═╝ ╚═╝  ╚═╝  ╚════╝  ╚═╝
+</pre>
+<span style="color: var(--yellow);">Welcome to my Terminal Portfolio!</span> (v0.0.0)
+Type '<span style="color: var(--green);">help</span>' to see a list of available commands.
+`
+                });
+            },
+
+            processCommand() {
+                const raw = this.command;
+                const trimmed = raw.trim();
+
+                if (trimmed === '') {
+                    this.history.push({ id: this.nextId++, path: this.currentPath, command: '', output: '' });
+                    this.command = '';
+                    this.scrollToBottom();
+                    return;
+                }
+
+                const [cmd, ...args] = trimmed.split(' ').filter(Boolean);
+                const output = this.execute(cmd, args);
+
+                this.history.push({ id: this.nextId++, path: this.currentPath, command: raw, output });
+
+                if (raw !== this.commandHistory[0]) this.commandHistory.unshift(raw);
+                this.historyIndex = -1;
+                this.command = '';
+                this.scrollToBottom();
+            },
+
+            execute(cmd, args) {
+                switch (cmd) {
+                    case 'help':
+                        return this.filesystem['~'].children['README.md'].content;
+                    case 'ls':
+                        return this.ls(args[0]);
+                    case 'cd':
+                        return this.cd(args[0]);
+                    case 'cat':
+                        return this.cat(args[0]);
+                    case 'clear':
+                        this.history = [];
+                        return '';
+                    case 'banner':
+                        this.showBanner();
+                        return '';
+                    default:
+                        return `<span class=\"error\">command not found: ${cmd}</span>`;
+                }
+            },
+
+            ls(pathStr) {
+                if (pathStr && pathStr.startsWith('/')) {
+                    return `<span class=\"error\">ls: absolute paths are not supported. Use ~/, ., or ..</span>`;
+                }
+
+                const target = this.getNode(pathStr || '.');
+                if (!target) return `<span class=\"error\">ls: cannot access '${pathStr || '.'}': No such file or directory</span>`;
+                if (target.type === 'file') return `<span class=\"file\">${this.basename(pathStr)}</span>`;
+
+                const names = Object.keys(target.children || {});
+                names.sort();
+                return names.map(name => target.children[name].type === 'dir' ? `<span class=\"dir\">${name}/</span>` : `<span class=\"file\">${name}</span>`).join('  ') || ' ';
+            },
+
+            cd(pathStr) {
+                if (!pathStr || pathStr === '~' || pathStr === '.') {
+                    this.currentPath = '~';
+                    return '';
+                }
+                if (pathStr.startsWith('/')) {
+                    return `<span class=\"error\">cd: absolute paths are not supported. Use ~/, ., or ..</span>`;
+                }
+
+                const targetPath = this.resolvePath(pathStr);
+                const target = this.getNode(targetPath);
+
+                if (!target || target.type !== 'dir') {
+                    return `<span class=\"error\">cd: ${pathStr}: No such directory</span>`;
+                }
+
+                this.currentPath = targetPath;
+                return '';
+            },
+
+            cat(pathStr) {
+                if (!pathStr) return 'Usage: cat [file]';
+                if (pathStr.startsWith('/')) {
+                    return `<span class=\"error\">cat: absolute paths are not supported. Use ~/, ., or ..</span>`;
+                }
+                const target = this.getNode(pathStr);
+                if (!target) return `<span class=\"error\">cat: ${pathStr}: No such file or directory</span>`;
+                if (target.type === 'dir') return `<span class=\"error\">cat: ${pathStr}: Is a directory</span>`;
+                return target.content;
+            },
+
+            // ---- Path utilities ----
+            getNode(pathStr) {
+                if (!pathStr) return null;
+                const resolved = this.resolvePath(pathStr);
+                if (!resolved) return null;
+                if (resolved === '~') return this.filesystem['~'];
+
+                // resolved is always like "~/a/b" here
+                const parts = resolved.slice(2).split('/').filter(Boolean);
+                let currentNode = this.filesystem['~'];
+                for (const part of parts) {
+                    if (currentNode.type === 'dir' && currentNode.children && currentNode.children[part]) {
+                        currentNode = currentNode.children[part];
+                    } else {
+                        return null;
+                    }
+                }
+                return currentNode;
+            },
+
+            resolvePath(pathStr) {
+                // Always return a canonical path like '~' or '~/a/b'
+                let newPathParts = [];
+
+                if (pathStr.startsWith('~/') || pathStr === '~') {
+                    newPathParts = pathStr === '~' ? [] : pathStr.substring(2).split('/').filter(Boolean);
+                } else {
+                    newPathParts = this.currentPath === '~' ? [] : this.currentPath.substring(2).split('/').filter(Boolean);
+                    const pathStrParts = pathStr.split('/');
+                    for (const part of pathStrParts) {
+                        if (!part || part === '.') continue;
+                        if (part === '..') newPathParts.pop();
+                        else newPathParts.push(part);
+                    }
+                }
+
+                return newPathParts.length > 0 ? '~/' + newPathParts.join('/') : '~';
+            },
+
+            basename(pathStr) {
+                if (!pathStr) return '';
+                const parts = pathStr.split('/').filter(Boolean);
+                return parts.length ? parts[parts.length - 1] : '';
+            },
+
+            // ---- UX helpers ----
+            autocomplete() {
+                const tokens = this.command.split(' ');
+                const last = tokens.pop() ?? '';
+                const cmd = tokens[0];
+
+                if (cmd === 'ls' || cmd === 'cd' || cmd === 'cat') {
+                    // Only complete names in current directory for simplicity
+                    const dir = this.getNode(this.currentPath);
+                    if (!dir || dir.type !== 'dir') return;
+                    const children = Object.keys(dir.children || {});
+                    const matches = children.filter(c => c.startsWith(last));
+                    if (matches.length === 1) {
+                        this.command = `${cmd} ${matches[0]}`;
+                    }
+                }
+            },
+
+            getPreviousCommand() {
+                if (this.historyIndex < this.commandHistory.length - 1) {
+                    this.historyIndex++;
+                    this.command = this.commandHistory[this.historyIndex];
+                }
+            },
+
+            getNextCommand() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.command = this.commandHistory[this.historyIndex];
+                } else {
+                    this.historyIndex = -1;
+                    this.command = '';
+                }
+            },
+
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    this.$refs.terminal.scrollTop = this.$refs.terminal.scrollHeight;
+                });
+            },
+                init() {
+                this.showBanner();
+                this.$nextTick(() => {
+                    try { this.$refs.input.focus(); } catch (e) {}
+                    this.updateCaret(); // 初期配置
+                });
+            },
+
+            updateCaret() {
+                // 1) ミラーのスタイルを input に合わせる（フォント揃えが大事）
+                const inp = this.$refs.input;
+                const mirror = this.$refs.mirror;
+                const caret = this.$refs.fakeCaret;
+                if (!inp || !mirror || !caret) return;
+
+                const style = getComputedStyle(inp);
+                mirror.style.font = style.font;
+                mirror.style.letterSpacing = style.letterSpacing;
+                mirror.style.padding = style.padding;
+                mirror.style.border = style.border;
+                mirror.style.width = 'auto';
+
+                // 2) ミラーに現在のテキスト（キャレット位置は末尾想定）を入れる
+                mirror.textContent = this.command;
+
+                // 3) ミラーの幅 = 入力テキストの表示幅 → その位置にキャレット
+                const left = mirror.offsetWidth;
+                caret.style.left = left + 'px';
+                caret.style.top = '0px'; // 行の先頭に配置（1行入力想定）
+
+                // 4) 行高さに合わせてキャレット高さを揃える
+                caret.style.height = style.lineHeight === 'normal' ? inp.offsetHeight + 'px' : style.lineHeight;
+            },
+
+            showCaret(show) {
+                const caret = this.$refs.fakeCaret;
+                if (!caret) return;
+                caret.style.display = show ? 'inline-block' : 'none';
+            }
+        };
+    };
+    </script>
+
+    <!-- Load Alpine after terminalData is declared so x-data="terminalData()" works reliably -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body x-data="terminalData()" @click="$refs.input.focus()">
+    <div class="p-4 w-full h-screen overflow-y-auto" x-ref="terminal">
+        <div id="history">
+            <template x-for="line in history" :key="line.id">
+                <div class="mb-1">
+                    <div class="prompt">
+                        <span>hayato-yamaji@portfolio</span><span>:</span><span x-text="line.path"></span><span>$&nbsp;</span>
+                        <span class="output-text" x-text="line.command"></span>
+                    </div>
+                    <div class="output-text" x-html="line.output"></div>
+                </div>
+            </template>
+        </div>
+
+        <div class="flex items-center prompt-row">
+            <div class="prompt">
+                <span>hayato-yamaji@portfolio</span><span>:</span><span x-text="currentPath"></span><span>$&nbsp;</span>
+            </div>
+            <div class="prompt-input-wrap">
+                <span class="mirror" x-ref="mirror"></span>
+                <span class="fake-caret" x-ref="fakeCaret" style="left: 0;"></span>
+                <form @submit.prevent="processCommand" class="flex-grow">
+                    <input
+                        type="text"
+                        class="custom-caret bg-transparent border-none text-gray-300 w-full p-0 focus:ring-0"
+                        x-model="command"
+                        x-ref="input"
+                        @input="updateCaret()"
+                        @keydown="updateCaret()"
+                        @keyup="updateCaret()"
+                        @click="updateCaret()"
+                        @focus="showCaret(true)"
+                        @blur="showCaret(false)"
+                        @keydown.arrow-up.prevent="getPreviousCommand"
+                        @keydown.arrow-down.prevent="getNextCommand"
+                        @keydown.tab.prevent="autocomplete"
+                        autofocus
+                    />
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
