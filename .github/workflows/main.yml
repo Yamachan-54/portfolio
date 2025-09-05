@@ -26,5 +26,5 @@ jobs:
       - name: Deploy to S3
         run: |
           BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
-          aws s3 sync portfolio/src "s3://${BUCKET_NAME}" --delete
+          aws s3 sync src "s3://${BUCKET_NAME}" --delete
 
