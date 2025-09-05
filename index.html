@@ -64,9 +64,9 @@
 
     <!--
       Fix strategy:
-      - Define `window.terminalData()` *before* Alpine initializes so `x-data="terminalData()"` can be evaluated reliably.
-      - Keep Alpine loaded with `defer` so it initializes after parsing.
-      - Avoid registering via `alpine:init` here because timing caused `terminal` to be undefined in some environments.
+      - Alpineの初期化前に`window.terminalData()`を定義し、`x-data=terminalData()`が確実に評価されるようにする。
+      - `defer`でAlpineをロードし続け、パース後に初期化されるようにする。
+      - タイミングの問題で一部の環境において`terminal`が未定義となるため、ここでは`alpine:init`経由の登録を避ける。
     -->
     <script>
     // Global factory so x-data can call terminalData() even before Alpine fires its init.
@@ -85,9 +85,8 @@
                         'README.md': {
                             type: 'file',
                             content: `
-ようこそ、山路逸斗のポートフォリオへ！
+Welcome to my Site!
 
-これはvimとターミナルが大好きな私のポートフォリオサイトです。
 Linuxの基本的なコマンドを使って、私の情報を探索できます。
 
 利用可能なコマンド:
@@ -104,15 +103,13 @@ Linuxの基本的なコマンドを使って、私の情報を探索できます
                         'about.txt': {
                             type: 'file',
                             content: `
-はじめまして。
-私はIT歴6ヶ月、Vim歴5ヶ月。ITの技術、文化に魅了され日々学習に励んでいます。
-特にバックエンド開発とデータベース設計が好きで情熱を注いでいます。
-このポートフォリオは、私が持つ技術への探求心と遊び心を表現したものです。
 
-- 名前: Hayato Yamaji
-- 職業: ---
-- 拠点: Wakayama, Japan
-- 趣味: Vim, COFFEE
+- <span style="color:var(--violet)">名前</span>: Hayato Yamaji
+- <span style="color:var(--violet)">職業</span>: ---
+- <span style="color:var(--violet)">拠点</span>: Wakayama, Japan
+- <span style="color:var(--violet)">趣味</span>: Vim, COFFEE
+- <span style="color:var(--violet)">GitHub</span>  : <a href="https://github.com/Yamachan-54" target="_brank" rel="noopener noreferrer">https://github.com/yamachan-54</a>
+- <span style="color:var(--violet)">X (Twitter)</span>: <a href="https://x.com/yamachan_96" target="_brank" rel="noopener noreferrer">https://x.com/yamachan_96</a>
 `
                         },
                         'study_log.txt': {
@@ -138,15 +135,11 @@ Linuxの基本的なコマンドを使って、私の情報を探索できます
                         'skills.txt': {
                             type: 'file',
                             content: `
-私が使用したことがある技術です。
-MAX_Level = 100
-
 - <span style="color:var(--cyan)">Frontend</span>: HTML(Lv.30), CSS(Lv.20), JavaScript(Lv.15), Alpine.js(Lv.15), Tailwind CSS(Lv.15)
 - <span style="color:var(--yellow)">Backend</span>: Python(Lv.35), Flask(Lv.35)
 - <span style="color:var(--orange)">Infrastructure</span>: AWS(Lv.15) (S3, CloudFront, Route53, EC2, Lambda), Docker(Lv.10)
 - <span style="color:var(--green)">Database</span>: MySQL(Lv.35)
-- <span style="color:var(--magenta)">CI/CD</span>: ---
-- <span style="color:var(--violet)">Tools</span>: Vim(Lv.35), Git(Lv.40), Notion(Lv.35), Mermeid(Lv.30)
+- <span style="color:var(--violet)">Other</span>: Linux(Lv.30), Git(Lv.40), Vim(Lv.35)
 `
                         },
                         'projects': {
@@ -155,23 +148,19 @@ MAX_Level = 100
                               'Hackathon.txt': {
                                   type: 'file',
                                   content: `
-<a href="https://github.com/RareTECH-Hackathon-TeamM/Nope_Chat_App" target="_blank" rel="noopener noreferrer"><span style="color:var(--green)">Nope</span>: "繋がりすぎる時代" にちょっと距離感のあるチャットアプリ</a>
+<a href="https://github.com/RareTECH-Hackathon-TeamM/Nope_Chat_App" target="_blank" rel="noopener noreferrer"><span style="color:var(--green)">Nope</span>: "繋がりすぎる時代" にちょっと距離感のあるチャットアプリ</a><span style="color:var(--green)">2025_Summer</span>
 
 `
                                 },
-                                'project-B.txt': { type: 'file', content: 'プロジェクトB: AWS上でのデータ分析基盤の構築。TerraformによるIaCを導入。' },
-                            }
-                        },
-                        'contact.txt': {
-                            type: 'file',
-                            content: `
-ご連絡はこちらまでお願いします。
-
-- <span style="color:var(--blue)">GitHub</span>  : <a href="https://github.com/Yamachan-54" target="_brank" rel="noopener noreferrer">https://github.com/yamachan-54</a>
-- <span style="color:var(--violet)">X (Twitter)</span>: <a href="https://x.com/yamachan_96" target="_brank" rel="noopener noreferrer">https://x.com/yamachan_96</a>
+                                'Solo_Dev.txt': {
+                                  type: 'file',
+                                  content: `
+None: ---
 
 `
-                        }
+                                },
+                            }
+                        },
                     }
                 }
             },
@@ -203,7 +192,7 @@ MAX_Level = 100
     ██║    ██║  ██║ ██║ ╚═╝ ██║ ██║  ██║ ╚█████╔╝ ██║
     ╚═╝    ╚═╝  ╚═╝ ╚═╝     ╚═╝ ╚═╝  ╚═╝  ╚════╝  ╚═╝
 </pre>
-<span style="color: var(--yellow);">Welcome to my Terminal Portfolio!</span> (v0.0.0)
+<span style="color: var(--yellow);">Welcome to my Site!</span> (v0.0.0)
 Type '<span style="color: var(--green);">help</span>' to see a list of available commands.
 `
                 });
@@ -343,6 +332,7 @@ Type '<span style="color: var(--green);">help</span>' to see a list of available
             },
 
             // ---- UX helpers ----
+            // ---- Tab補完 ----
             autocomplete() {
                 const tokens = this.command.split(' ');
                 const last = tokens.pop() ?? '';
@@ -360,6 +350,7 @@ Type '<span style="color: var(--green);">help</span>' to see a list of available
                 }
             },
 
+            // ---- arrow-upキーでコマンド履歴 ----
             getPreviousCommand() {
                 if (this.historyIndex < this.commandHistory.length - 1) {
                     this.historyIndex++;
@@ -367,6 +358,7 @@ Type '<span style="color: var(--green);">help</span>' to see a list of available
                 }
             },
 
+            // ---- arrow-downキーでコマンド履歴 ----
             getNextCommand() {
                 if (this.historyIndex > 0) {
                     this.historyIndex--;
