@@ -1,18 +1,30 @@
-name: Build html on S3
+name: Deploy HTML to S3
+
 on:
   push:
-      branches:
-        - main
+    branches:
+      - main
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout
-        uses: actions/checkout@master  # リポジトリをチェックアウト
+        uses: actions/checkout@v4
 
-      - name: Deploy  # S3にデプロイ 
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |  # S3のya-ma-ji.net-s3バケットにデプロイ
-          aws s3 cp --recursive --region ap-northeast-1 build s3://ya-ma-ji.net-s3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-northeast-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      
+      - name: Deploy to S3
+        run: |
+          BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
+          aws s3 sync portfolio/src "s3://${BUCKET_NAME}" --delete
+
