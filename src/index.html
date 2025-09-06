@@ -86,8 +86,6 @@
                         'README.md': {
                             type: 'file',
                             content: `
-Welcome to my Site!
-
 Linuxの基本的なコマンドを使って、私の情報を探索できます。
 
 利用可能なコマンド:
@@ -195,7 +193,6 @@ None: ---
     ╚═╝    ╚═╝  ╚═╝ ╚═╝     ╚═╝ ╚═╝  ╚═╝  ╚════╝  ╚═╝
 </pre>
 <span style="color: var(--yellow);">Welcome to my Site!</span> (v0.0.0)
-Type '<span style="color: var(--green);">help</span>' to see a list of available commands.
 `
                 });
             },
@@ -378,6 +375,13 @@ Type '<span style="color: var(--green);">help</span>' to see a list of available
             },
                 init() {
                 this.showBanner();
+                this.history.push({
+                    id: this.nextId++,
+                    path: this.currentPath,
+                    command: 'cat README.md',
+                    output: this.cat('README.md'),
+                });
+                this.scrollToBottom();
                 this.$nextTick(() => {
                     try { this.$refs.input.focus(); } catch (e) {}
                     this.updateCaret(); // 初期配置
